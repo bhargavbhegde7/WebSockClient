@@ -14,10 +14,11 @@
         android:layout_height="wrap_content"
         android:text="connect"
         android:id="@+id/connectButton"
+        android:onClick="onConnectClick"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:onClick="onConnectClick"/>
+        android:layout_marginTop="72dp"
+        android:layout_alignEnd="@+id/sendButton" />
 
     <EditText
         android:layout_width="wrap_content"
@@ -39,9 +40,17 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=". . . . . ."
+        android:text="Server Response Will Appear Here"
         android:id="@+id/responseText"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Not Connected"
+        android:id="@+id/connectionState"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
 
 </RelativeLayout>

@@ -11,19 +11,18 @@ import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
 
-import org.json.JSONObject;
-
 import java.net.URISyntaxException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
 
-    private EditText mInputMessageView;
-    private TextView responseView;
+    private EditText inputMessage;
+    private TextView response;
+    private TextView connectionState;
 
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("http://192.168.10.16:3000/");
+            mSocket = IO.socket("http://192.168.10.16:8090/");
         } catch (URISyntaxException e) {
             System.out.println("Exception : "+e.getMessage());
         }
@@ -33,17 +32,33 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mInputMessageView = (EditText) findViewById(R.id.messageInput);
-        responseView = (TextView) findViewById(R.id.responseText);
+        inputMessage = (EditText) findViewById(R.id.messageInput);
+        response = (TextView) findViewById(R.id.responseText);
+        connectionState = (TextView) findViewById(R.id.connectionState);
     }
 
-    private Emitter.Listener onResponse = new Emitter.Listener() {
+    private void addToView(String message){
+        response.setText(message);
+    }
 
+    private void setConnectionState(String state){
+        connectionState.setText("true".equals(state)?"Connected":"Not Connected");
+    }
+
+    private Emitter.Listener responseHandler = new Emitter.Listener() {
+        String message = "";
         @Override
         public void call(final Object... args) {
-            String message = (String) args[0];
-            System.out.println("Response : "+message);
-            //responseView.setText(message);
+            message = (String) args[0];
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if(message.split(":")[0].contains("connected"))
+                        setConnectionState(message.split(":")[1]);
+                    else
+                        addToView(message);
+                }
+            });
         }
     };
 
@@ -53,17 +68,17 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mInputMessageView.setText("");
+        inputMessage.setText("");
         mSocket.emit("new message", message);
     }
 
     public void onConnectClick(View view){
-        mSocket.on("response", onResponse);
+        mSocket.on("response", responseHandler);
         mSocket.connect();
     }
 
     public void onSendClicked(View view){
-        String message = mInputMessageView.getText().toString().trim();
+        String message = inputMessage.getText().toString().trim();
         attemptSend(message);
     }
 
@@ -72,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         mSocket.disconnect();
-        mSocket.off("response", onResponse);
+        mSocket.off("response", responseHandler);
     }
+
 }
