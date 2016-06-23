@@ -41,40 +41,71 @@ public class MainActivity extends AppCompatActivity{
         response.setText(message);
     }
 
-    private void setConnectionState(String state){
-        connectionState.setText("true".equals(state)?"Connected":"Not Connected");
+    private void setConnectionState(boolean state){
+        connectionState.setText(state?"Connected":"Not Connected");
     }
 
+    //handler to catch the 'connection' event from the server
     private Emitter.Listener responseHandler = new Emitter.Listener() {
         String message = "";
         @Override
         public void call(final Object... args) {
             message = (String) args[0];
+
+            //run the UI changes on the UI thread
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if(message.split(":")[0].contains("connected"))
-                        setConnectionState(message.split(":")[1]);
+                    addToView(message);
+                }
+            });
+        }
+    };
+
+    //handler to catch the 'connection' event from the server
+    private Emitter.Listener connectionStateHandler = new Emitter.Listener() {
+        String message = "";
+        @Override
+        public void call(final Object... args) {
+            message = (String) args[0];
+
+            //run the UI changes on the UI thread
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if("on".equals(message.trim()))
+                        setConnectionState(true);
                     else
-                        addToView(message);
+                        setConnectionState(false);
                 }
             });
         }
     };
 
     private void attemptSend(String message) {
-
         if (TextUtils.isEmpty(message)) {
             return;
         }
-
         inputMessage.setText("");
-        mSocket.emit("new message", message);
+        try {
+            //emit the 'new-message' event
+            mSocket.emit("new-message", message);
+        }catch(Exception e){
+            System.out.println("Exception : "+e.getMessage());
+        }
     }
 
     public void onConnectClick(View view){
-        mSocket.on("response", responseHandler);
-        mSocket.connect();
+        try {
+
+            //set listeners
+            mSocket.on("response", responseHandler);
+            mSocket.on("connection-state", connectionStateHandler);
+
+            mSocket.connect();
+        }catch(Exception e){
+            System.out.println("Exception : "+e.getMessage());
+        }
     }
 
     public void onSendClicked(View view){
@@ -85,9 +116,13 @@ public class MainActivity extends AppCompatActivity{
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        mSocket.disconnect();
-        mSocket.off("response", responseHandler);
+        try {
+            //remove all listeners
+            mSocket.off();
+            mSocket.disconnect();
+        }catch(Exception e){
+            System.out.println("Exception : "+e.getMessage());
+        }
     }
 
 }
