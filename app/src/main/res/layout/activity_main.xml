@@ -51,6 +51,33 @@
         android:text="Not Connected"
         android:id="@+id/connectionState"
         android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
+        android:layout_centerHorizontal="true" />
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Auto Send"
+        android:id="@+id/autoSend"
+        android:layout_below="@+id/connectionState"
+        android:layout_centerHorizontal="true"
+        android:checked="true" />
+
+    <ImageButton
+        android:layout_width="25dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/micButton"
+        android:src="@drawable/ico_mic"
+        style="?android:buttonBarButtonStyle"
+        android:onClick="onMicClicked"
+        android:layout_alignTop="@+id/messageInput"
+        android:layout_toStartOf="@+id/sendButton" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Message sent will appear here"
+        android:id="@+id/requestMessage"
+        android:layout_below="@+id/connectButton"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>
