@@ -1,5 +1,7 @@
 package android.learn.com.websocktry;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.speech.RecognizerIntent;
@@ -34,7 +36,7 @@ public class MainActivity extends AppCompatActivity{
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("http://192.168.10.16:8090/");
+            mSocket = IO.socket("http://192.168.10.18:8090/");
         } catch (URISyntaxException e) {
             System.out.println("Exception : "+e.getMessage());
         }
@@ -98,8 +100,11 @@ public class MainActivity extends AppCompatActivity{
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if("on".equals(message.trim()))
+                    if("on".equals(message.trim())) {
                         setConnectionState(true);
+                        Account account = getAccount(AccountManager.get(getApplicationContext()));
+                        mSocket.emit("username", account.name);
+                    }
                     else
                         setConnectionState(false);
                 }
@@ -121,9 +126,19 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
+    public static Account getAccount(AccountManager accountManager) {
+        Account[] accounts = accountManager.getAccountsByType("com.google");
+        Account account;
+        if (accounts.length > 0) {
+            account = accounts[0];
+        } else {
+            account = null;
+        }
+        return account;
+    }
+
     public void onConnectClick(View view){
         try {
-
             //set listeners
             mSocket.on("response", responseHandler);
             mSocket.on("connection-state", connectionStateHandler);
