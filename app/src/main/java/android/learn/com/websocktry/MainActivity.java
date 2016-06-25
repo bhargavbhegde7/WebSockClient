@@ -2,9 +2,9 @@ package android.learn.com.websocktry;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -13,7 +13,6 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
@@ -25,9 +24,8 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity{
 
-    private final int REQ_CODE_SPEECH_INPUT = 100;
     private boolean AUTO_SEND = true;
-
+    private TextToSpeech engine;
     private EditText inputMessage;
     private TextView response;
     private TextView connectionState;
@@ -36,7 +34,7 @@ public class MainActivity extends AppCompatActivity{
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("http://192.168.10.18:8090/");
+            mSocket = IO.socket("http://192.168.10.1:8090/");
         } catch (URISyntaxException e) {
             System.out.println("Exception : "+e.getMessage());
         }
@@ -50,7 +48,15 @@ public class MainActivity extends AppCompatActivity{
         response = (TextView) findViewById(R.id.responseText);
         connectionState = (TextView) findViewById(R.id.connectionState);
         requestMessage = (TextView) findViewById(R.id.requestMessage);
-
+        TextToSpeech.OnInitListener listener = new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    engine.setLanguage(Locale.UK);
+                }
+            }
+        };
+        engine = new TextToSpeech(this, listener);
         CheckBox autoSend = (CheckBox) findViewById(R.id.autoSend);
         autoSend.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                                                 @Override
@@ -64,53 +70,9 @@ public class MainActivity extends AppCompatActivity{
         );
     }
 
-    private void addToView(String message){
-        response.setText(message);
-    }
-
     private void setConnectionState(boolean state){
         connectionState.setText(state?"Connected":"Not Connected");
     }
-
-    //handler to catch the 'connection' event from the server
-    private Emitter.Listener responseHandler = new Emitter.Listener() {
-        String message = "";
-        @Override
-        public void call(final Object... args) {
-            message = (String) args[0];
-
-            //run the UI changes on the UI thread
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    addToView(message);
-                }
-            });
-        }
-    };
-
-    //handler to catch the 'connection' event from the server
-    private Emitter.Listener connectionStateHandler = new Emitter.Listener() {
-        String message = "";
-        @Override
-        public void call(final Object... args) {
-            message = (String) args[0];
-
-            //run the UI changes on the UI thread
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if("on".equals(message.trim())) {
-                        setConnectionState(true);
-                        Account account = getAccount(AccountManager.get(getApplicationContext()));
-                        mSocket.emit("username", account.name);
-                    }
-                    else
-                        setConnectionState(false);
-                }
-            });
-        }
-    };
 
     private void attemptSend(String message) {
         if (TextUtils.isEmpty(message)) {
@@ -124,6 +86,10 @@ public class MainActivity extends AppCompatActivity{
         }catch(Exception e){
             System.out.println("Exception : "+e.getMessage());
         }
+    }
+
+    private void speech(String text) {
+        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
     }
 
     public static Account getAccount(AccountManager accountManager) {
@@ -140,6 +106,47 @@ public class MainActivity extends AppCompatActivity{
     public void onConnectClick(View view){
         try {
             //set listeners
+            //handler to catch the 'connection' event from the server
+            Emitter.Listener responseHandler = new Emitter.Listener() {
+                String message = "";
+                @Override
+                public void call(final Object... args) {
+                    message = (String) args[0];
+
+                    //run the UI changes on the UI thread
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            response.setText(message);
+                            speech(message);
+                        }
+                    });
+                }
+            };
+
+            //handler to catch the 'connection' event from the server
+            Emitter.Listener connectionStateHandler = new Emitter.Listener() {
+                String message = "";
+                @Override
+                public void call(final Object... args) {
+                    message = (String) args[0];
+
+                    //run the UI changes on the UI thread
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if("on".equals(message.trim())) {
+                                setConnectionState(true);
+                                Account account = getAccount(AccountManager.get(getApplicationContext()));
+                                mSocket.emit("username", account.name);
+                            }
+                            else
+                                setConnectionState(false);
+                        }
+                    });
+                }
+            };
+
             mSocket.on("response", responseHandler);
             mSocket.on("connection-state", connectionStateHandler);
 
@@ -156,7 +163,7 @@ public class MainActivity extends AppCompatActivity{
 
     public void onMicClicked(View view){
         try {
-            promptSpeechInput();
+            new VoiceDetector(this).promptSpeechInput();
         }catch(Exception e){
             System.out.println("Exception : "+e.getMessage());
         }
@@ -174,31 +181,13 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-    /* for speech input */
-    /* Showing google speech input dialog */
-    private void promptSpeechInput() {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
-                "speak the words");
-        try {
-            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
-        } catch (ActivityNotFoundException a) {
-            Toast.makeText(getApplicationContext(),
-                    "speech not supported",
-                    Toast.LENGTH_SHORT).show();
-        }
-    }
-
     /* Receiving speech input */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-            case REQ_CODE_SPEECH_INPUT: {
+            case VoiceDetector.REQ_CODE_SPEECH_INPUT: {
                 if (resultCode == RESULT_OK && null != data) {
 
                     ArrayList<String> result = data
@@ -213,6 +202,5 @@ public class MainActivity extends AppCompatActivity{
             }
         }
     }
-    /* for speech input */
 
 }

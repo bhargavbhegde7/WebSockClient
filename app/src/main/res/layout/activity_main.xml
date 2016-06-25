@@ -40,7 +40,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Server Response Will Appear Here"
+        android:text=". . . . ."
         android:id="@+id/responseText"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
@@ -75,7 +75,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Message sent will appear here"
+        android:text=". . . . ."
         android:id="@+id/requestMessage"
         android:layout_below="@+id/connectButton"
         android:layout_centerHorizontal="true" />
