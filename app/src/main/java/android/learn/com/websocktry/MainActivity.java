@@ -59,14 +59,14 @@ public class MainActivity extends AppCompatActivity{
         engine = new TextToSpeech(this, listener);
         CheckBox autoSend = (CheckBox) findViewById(R.id.autoSend);
         autoSend.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                                                @Override
-                                                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                                                    if(isChecked)
-                                                        AUTO_SEND = true;
-                                                    else
-                                                        AUTO_SEND = false;
-                                                }
-                                            }
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    if(isChecked)
+                        AUTO_SEND = true;
+                    else
+                        AUTO_SEND = false;
+                }
+            }
         );
     }
 
@@ -171,14 +171,21 @@ public class MainActivity extends AppCompatActivity{
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         try {
             //remove all listeners
             mSocket.off();
             mSocket.disconnect();
+
+            //Close the Text to Speech Library
+            if(engine != null) {
+
+                engine.stop();
+                engine.shutdown();
+            }
         }catch(Exception e){
             System.out.println("Exception : "+e.getMessage());
         }
+        super.onDestroy();
     }
 
     /* Receiving speech input */
