@@ -48,7 +48,8 @@ public class MainActivity extends AppCompatActivity{
         response = (TextView) findViewById(R.id.responseText);
         connectionState = (TextView) findViewById(R.id.connectionState);
         requestMessage = (TextView) findViewById(R.id.requestMessage);
-        TextToSpeech.OnInitListener listener = new TextToSpeech.OnInitListener() {
+
+        TextToSpeech.OnInitListener initListener = new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status == TextToSpeech.SUCCESS) {
@@ -56,15 +57,13 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         };
-        engine = new TextToSpeech(this, listener);
+
+        engine = new TextToSpeech(this, initListener);
         CheckBox autoSend = (CheckBox) findViewById(R.id.autoSend);
         autoSend.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    if(isChecked)
-                        AUTO_SEND = true;
-                    else
-                        AUTO_SEND = false;
+                    AUTO_SEND = isChecked;
                 }
             }
         );
