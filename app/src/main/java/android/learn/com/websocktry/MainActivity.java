@@ -13,6 +13,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
@@ -30,11 +31,14 @@ public class MainActivity extends AppCompatActivity{
     private TextView response;
     private TextView connectionState;
     private TextView requestMessage;
+    private int localesupportStatus;
+    private final String URL = "http://192.168.10.1:8090/";
+    private final String AI_NAME = "JARVIS";
 
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("http://192.168.10.1:8090/");
+            mSocket = IO.socket(URL);
         } catch (URISyntaxException e) {
             System.out.println("Exception : "+e.getMessage());
         }
@@ -49,16 +53,20 @@ public class MainActivity extends AppCompatActivity{
         connectionState = (TextView) findViewById(R.id.connectionState);
         requestMessage = (TextView) findViewById(R.id.requestMessage);
 
+        //implement the listener
         TextToSpeech.OnInitListener initListener = new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status == TextToSpeech.SUCCESS) {
-                    engine.setLanguage(Locale.UK);
+                    localesupportStatus = engine.setLanguage(Locale.UK);
+                }else{
+                    Toast.makeText(getApplicationContext(), "Feature id not supported",Toast.LENGTH_SHORT).show();
                 }
             }
         };
 
-        engine = new TextToSpeech(this, initListener);
+        //tie the listener with the TextToSpeech object
+        engine = new TextToSpeech(getApplicationContext(), initListener);
         CheckBox autoSend = (CheckBox) findViewById(R.id.autoSend);
         autoSend.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -74,21 +82,39 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private void attemptSend(String message) {
-        if (TextUtils.isEmpty(message)) {
-            return;
-        }
-        inputMessage.setText("");
-        try {
-            //emit the 'new-message' event
-            mSocket.emit("new-message", message);
-            requestMessage.setText(message);
-        }catch(Exception e){
-            System.out.println("Exception : "+e.getMessage());
+
+        //do inside processing before actually sending
+        if (message.toUpperCase().contains("jarvis".toUpperCase())) {
+            if (message.toUpperCase().contains("come online".toUpperCase())) {
+                mSocket.connect();
+            }
+            if (message.toUpperCase().contains("go to sleep".toUpperCase()))
+                //remove listeners
+                mSocket.off();
+                mSocket.disconnect();
+        }else{
+            //actually send it
+            if (TextUtils.isEmpty(message)) {
+                return;
+            }
+            inputMessage.setText("");
+            try {
+                //emit the 'new-message' event
+                mSocket.emit("new-message", message);
+                requestMessage.setText(message);
+            } catch (Exception e) {
+                System.out.println("Exception : " + e.getMessage());
+            }
         }
     }
 
-    private void speech(String text) {
-        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+    private void readOutLoud(String text) throws Exception {
+        if(text==null || localesupportStatus == TextToSpeech.LANG_NOT_SUPPORTED || localesupportStatus == TextToSpeech.LANG_MISSING_DATA) {
+            Toast.makeText(getApplicationContext(), "Feature id not supported", Toast.LENGTH_SHORT).show();
+            throw new Exception("Exception happened in converting the text to speech");
+        }else {
+            engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }
     }
 
     public static Account getAccount(AccountManager accountManager) {
@@ -104,7 +130,8 @@ public class MainActivity extends AppCompatActivity{
 
     public void onConnectClick(View view){
         try {
-            //set listeners
+            //set listeners or handlers
+
             //handler to catch the 'connection' event from the server
             Emitter.Listener responseHandler = new Emitter.Listener() {
                 String message = "";
@@ -117,7 +144,11 @@ public class MainActivity extends AppCompatActivity{
                         @Override
                         public void run() {
                             response.setText(message);
-                            speech(message);
+                            try {
+                                readOutLoud(message);
+                            }catch (Exception e){
+                                System.out.println("Exception : "+e.getMessage());
+                            }
                         }
                     });
                 }
@@ -173,6 +204,7 @@ public class MainActivity extends AppCompatActivity{
         try {
             //remove all listeners
             mSocket.off();
+
             mSocket.disconnect();
 
             //Close the Text to Speech Library
@@ -187,7 +219,7 @@ public class MainActivity extends AppCompatActivity{
         super.onDestroy();
     }
 
-    /* Receiving speech input */
+    /* Receiving voice input */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
