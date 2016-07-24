@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity{
     private TextView connectionState;
     private TextView requestMessage;
     private int localesupportStatus;
-    private final String URL = "http://192.168.10.1:8090/";
+    private final String URL = "http://192.168.0.6:8090/";
     private final String AI_NAME = "JARVIS";
 
     private Socket mSocket;
@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity{
             inputMessage.setText("");
             try {
                 //emit the 'new-message' event
-                mSocket.emit("new-message", message);
+                mSocket.emit("android-message", message);
                 requestMessage.setText(message);
             } catch (Exception e) {
                 System.out.println("Exception : " + e.getMessage());
@@ -132,7 +132,7 @@ public class MainActivity extends AppCompatActivity{
         try {
             //set listeners or handlers
 
-            //handler to catch the 'connection' event from the server
+            //handler to catch the 'response' event from the server
             Emitter.Listener responseHandler = new Emitter.Listener() {
                 String message = "";
                 @Override
@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity{
                 }
             };
 
-            //handler to catch the 'connection' event from the server
+            //handler to catch the 'connection-state' event from the server
             Emitter.Listener connectionStateHandler = new Emitter.Listener() {
                 String message = "";
                 @Override
@@ -165,10 +165,12 @@ public class MainActivity extends AppCompatActivity{
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            //if the connection is on
                             if("on".equals(message.trim())) {
                                 setConnectionState(true);
-                                Account account = getAccount(AccountManager.get(getApplicationContext()));
-                                mSocket.emit("username", account.name);
+                                /*Account account = getAccount(AccountManager.get(getApplicationContext()));
+                                mSocket.emit("username", account.name);*/
+                                mSocket.emit("join", "{\"userID\" : "+"\"android\""+"}");
                             }
                             else
                                 setConnectionState(false);
