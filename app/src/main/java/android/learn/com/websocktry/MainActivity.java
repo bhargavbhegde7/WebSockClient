@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity{
     private TextView connectionState;
     private TextView requestMessage;
     private int localesupportStatus;
-    private final String URL = "http://192.168.0.6:8090/";
+    private final String URL = "http://159.203.161.191:8090/";
     private final String AI_NAME = "JARVIS";
 
     private Socket mSocket;
@@ -170,7 +170,7 @@ public class MainActivity extends AppCompatActivity{
                                 setConnectionState(true);
                                 /*Account account = getAccount(AccountManager.get(getApplicationContext()));
                                 mSocket.emit("username", account.name);*/
-                                mSocket.emit("join", "{\"userID\" : "+"\"android\""+"}");
+                                mSocket.emit("register", "{\"userID\" : "+"\"android\""+"}");
                             }
                             else
                                 setConnectionState(false);
